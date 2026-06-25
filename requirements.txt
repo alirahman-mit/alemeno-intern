@@ -1,0 +1,10 @@
+fastapi==0.109.2
+uvicorn==0.27.0
+celery==5.3.6
+redis==5.0.1
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+pandas==2.2.0
+python-multipart==0.0.9
+google-genai==0.3.0
+tenacity==8.2.3
