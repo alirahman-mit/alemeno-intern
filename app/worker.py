@@ -107,26 +107,26 @@ def process_csv_job(self, job_id, csv_path):
             summary_json = {}
         
         try:
-            # 1. Update status Job
+            #Update status Job
             job_record = db.query(Job).filter(Job.id == job_id).first()
             if job_record:
                 job_record.status = "completed"
                 job_record.row_count_clean = len(df)
                 job_record.completed_at = datetime.utcnow()
 
-            # 2. Persiapkan data transaksi (konversi dataframe ke list of dictionaries)
-            # Pastikan menempelkan job_id ke setiap transaksi
+            # store data transaction(convert dataframe to list of dictionaries)
+            # makesure stick job_id in every transaction
             df['job_id'] = job_id
             
-            # Kita gunakan orient='records' lalu mapping langsung ke model SQLAlchemy
+            # we use orient='records' then mapping direcly to SQLAlchemy
             df = df.astype(object).where(pd.notna(df), None)
             df_records = df.to_dict(orient='records')
             
-            # Bulk insert transaksi agar lebih cepat daripada insert satu per satu
+            # Bulk insert transaction faster than insert one by one
             transactions_to_insert = [Transaction(**row) for row in df_records]
             db.add_all(transactions_to_insert)
 
-            # 3. Simpan Job Summary (if LLM succes make it)
+            # store Job Summary (if LLM succes make it)
             if summary_json:
                 summary_record = JobSummary(
                     job_id=job_id,
@@ -145,7 +145,7 @@ def process_csv_job(self, job_id, csv_path):
             return {"status": "completed", "job_id": job_id}
 
         except Exception as e:
-            db.rollback() # Jika ada error saat save, batalkan semua agar tidak ada data setengah jadi
+            db.rollback() # if error while saving, cancel all so that there is no half-finished data
             print(f"Gagal menyimpan ke database: {e}")
             
             if job_record:
@@ -159,6 +159,6 @@ def process_csv_job(self, job_id, csv_path):
         return {"status": "completed", "job_id": job_id}
     
     except Exception as e:
-        # update status 'failed' di tabel Job
+        # update status 'failed' in tabel Job
         print(f"Job {job_id} gagal diproses: {e}")
         return {"status": "failed", "error": str(e)}

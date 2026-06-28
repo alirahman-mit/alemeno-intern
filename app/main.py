@@ -30,19 +30,19 @@ async def upload_transactions(file: UploadFile = File(...), db: Session = Depend
     if not file.filename.endswith('.csv'):
      raise HTTPException(status_code=400, detail="Must be a CSV file")
 
-    # Simpan file ke server
+    # save file to server
     os.makedirs("/tmp", exist_ok=True)
     file_location = f"/tmp/{file.filename}"
     with open(file_location, "wb+") as file_object:
         shutil.copyfileobj(file.file, file_object)
 
-    # Catat job di database
+    # store job in database
     new_job = Job(filename=file.filename, status="pending")
     db.add(new_job)
     db.commit()
     db.refresh(new_job)
 
-    # Kirim instruksi ke Celery Worker
+    # send instruction to Celery Worker
     process_csv_job.delay(new_job.id, file_location)
 
     return {"job_id": new_job.id, "message": "File uploaded and processing started."}
